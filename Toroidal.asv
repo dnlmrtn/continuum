@@ -1,0 +1,81 @@
+function [Fx Fy Fz] = Toroidal(a, R, L, g, mu, Q)
+% Define constants
+a = 0.2;
+R = 2;
+L = 2;
+g = 1;
+mu = 1;
+Q = 1;
+A = 2*Q/(pi*a^4);
+
+% Define variables
+syms rho phi s vx vy vz v_rho v_phi v_s temp x y z
+
+% Define the fluid flow with respect to Toriodal coordinate system
+v_rho = ((A^2)*g / (288*R*mu))*((a^2-rho^2)^2)*(4*(a^2)-(rho^2))*cos(phi);
+v_phi = ((A^2)*g / (288*R*mu)) * ((a^2-rho^2)^2) * (4*(a^2)-23*(a^2)*(rho^2) + 7*(rho^4))*sin(phi);
+v_s = A*(a^2-rho^2) - ((3*A*rho*cos(phi))/(4*R))*(a^2 - rho^2);
+temp = diff(v_rho/sin(phi), rho);
+
+p = (g*(A^2)*rho*((a^2)-(rho^2))*cos(phi)/R) + mu*cos(phi)*diff((temp + v_phi/(rho*sin(phi))-(v_rho/(rho*cos(phi)))),'rho',1);
+
+% Convert to cartesian coordinate system (variables are still rho phi and s)
+vx = (v_rho)*(cos(phi)*cos(s/R)) + (v_phi)*(-sin(phi)*cos(s/R)) + (v_s)*(-sin(s/R));
+vy = v_rho*(sin(s/R)) + v_phi*sin(s/R) + v_s*(cos(s/R));
+vz = v_rho*sin(phi) + v_phi*cos(phi);
+
+% Define cartesian basis wrt toroidal coordinate system
+x = (R + rho*cos(phi))*cos(s/R);
+y = (R + rho*cos(phi))*sin(s/R);
+z = rho*sin(phi);
+
+% ----- Time to plot -----
+% initalize some arrays
+xSpace = [];
+ySpace = [];
+zSpace = [];
+vxSpace = [];
+vySpace = [];
+vzSpace = [];
+
+for rho = 0:a/10:a
+    for phi = 0:(2*pi/10):(2*pi)
+        for s = 0:L/10:L
+            x = (R + rho*cos(phi))*cos(s/R);
+            y = (R + rho*cos(phi))*sin(s/R);
+            z = rho*sin(phi);
+            xSpace = [xSpace x];
+            ySpace = [ySpace y];
+            zSpace = [zSpace z];
+            v_rho = ((A^2)*g / (288*R*mu))*((a^2-rho^2)^2)*(4*(a^2)-(rho^2))*cos(phi);
+            v_phi = ((A^2)*g / (288*R*mu)) * ((a^2-rho^2)^2) * (4*(a^2)-23*(a^2)*(rho^2) + 7*(rho^4))*sin(phi);
+            v_s = A*(a^2-rho^2) - ((3*A*rho*cos(phi))/(4*R))*(a^2 - rho^2);
+            vx = (v_rho)*(cos(phi)*cos(s/R)) + (v_phi)*(-sin(phi)*cos(s/R)) + (v_s)*(-sin(s/R));
+            vy = v_rho*(sin(s/R)) + v_phi*sin(s/R) + v_s*(cos(s/R));
+            vz = v_rho*sin(phi) + v_phi*cos(phi);
+            vxSpace = [vxSpace vx];
+            vySpace = [vySpace vy];
+            vzSpace = [vzSpace vz];
+        end
+    end
+end
+% quiver3(xSpace,ySpace,zSpace,vxSpace,vySpace,vzSpace)
+
+% Now that we have cartesian velocity field in terms of toroidal
+% coordinates, we can do integration
+
+% Calculate T(v,p)
+% Rate of deformation tensor:
+
+gradV = jacobian([vx, vy, vz], [rho, phi, s])*(jacobian([x,y,z],[rho,phi,s]).^-1);
+D = 0.5*(gradV+gradV');
+T = -p*eye(3) + 2*mu*D
+end
+
+a = 0.2;
+R = 2;
+L = 2;
+g = 1;
+mu = 1;
+Q = 1;
+Toroidal(0.2, R, L, g, mu, Q)
